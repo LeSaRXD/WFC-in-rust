@@ -255,13 +255,12 @@ impl Field {
 		Ok(())
 	}
 }
-
 impl Display for Field {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let mut out = String::new();
 		for y in 0..self.size {
 			for x in 0..self.size {
-				out = format!("{}{} ", out, self.get(x, y).unwrap().to_string());
+				out = format!("{}{}", out, self.get(x, y).unwrap().to_string());
 			}
 			out += "\n";
 		}
