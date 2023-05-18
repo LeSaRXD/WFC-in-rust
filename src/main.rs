@@ -1,43 +1,61 @@
 use std::fmt::Display;
 
-use rand::seq::SliceRandom;
+use rand::{seq::SliceRandom};
 use enum_derived::Rand;
 
 
 
 #[derive(Clone, Copy, Rand, Debug, PartialEq)]
 enum State {
-	Empty,
-	BT,
-	LR,
-	LTR,
-	BLTR,
+	#[weight(5)] Empty,
+	#[weight(5)] BL,
+	#[weight(5)] BLT,
+	#[weight(2)] BLR,
+	#[weight(3)] BT,
+	#[weight(2)] BTR,
+	#[weight(3)] BR,
+	#[weight(3)] LT,
+	#[weight(2)] LTR,
+	#[weight(3)] LR,
+	#[weight(3)] TR,
+	#[weight(1)] BLTR,
 }
 impl State {
 	fn all() -> Vec<Self> {
 		use State::*;
 
-		vec![Empty, BT, LR, LTR, BLTR]
+		vec![Empty, BL, BLT, BLR, BT, BTR, BR, LT, LTR, LR, TR, BLTR]
 	}
 	fn count() -> usize {
 		Self::all().len()
 	}
 
-	fn fits_left(&self, other: &State) -> bool {
+	fn connects_left(&self) -> bool {
 		use State::*;
 
-		match self {
-			Empty | BT => matches!(other, Empty | BT),
-			LR | LTR | BLTR => matches!(other, LR | LTR | BLTR),
-		}
+		matches!(self, BL | BLT | BLR | LT | LTR | LR | BLTR)
+	}
+	fn connects_right(&self) -> bool {
+		use State::*;
+
+		matches!(self, BLR | BTR | BR | LTR | LR | TR | BLTR)
+	}
+	fn connects_top(&self) -> bool {
+		use State::*;
+
+		matches!(self, BLT | BT | BTR | LT | LTR | TR | BLTR)
+	}
+	fn connects_bottom(&self) -> bool {
+		use State::*;
+
+		matches!(self, BL | BLT | BLR | BT | BTR | BR | BLTR)
+	}
+
+	fn fits_left(&self, other: &State) -> bool {
+		self.connects_left() == other.connects_right()
 	}
 	fn fits_bottom(&self, other: &State) -> bool {
-		use State::*;
-
-		match self {
-			Empty | LR | LTR => matches!(other, Empty | LR),
-			BT | BLTR => matches!(other, BT | LTR | BLTR),
-		}
+		self.connects_bottom() == other.connects_top()
 	}
 
 	fn fits_right(&self, other: &State) -> bool {
@@ -47,6 +65,26 @@ impl State {
 		other.fits_bottom(self)
 	}
 	
+}
+impl ToString for State {
+	fn to_string(&self) -> String {
+		use State::*;
+
+		match self {
+			Empty => "   ",
+			BL =>    "━┓ ",
+			BLT =>   "━┫ ",
+			BLR =>   "━┳━",
+			BT =>    " ┃ ",
+			BTR =>   " ┣━",
+			BR =>    " ┏━",
+			LT =>    "━┛ ",
+			LTR =>   "━┻━",
+			LR =>    "━━━",
+			TR =>    " ┗━",
+			BLTR =>  "━╋━",
+		}.to_string()
+	}
 }
 
 
@@ -99,16 +137,9 @@ impl Default for Domain {
 impl ToString for Domain {
 	fn to_string(&self) -> String {
 		use Domain::*;
-		use State::*;
 
 		match self {
-			Collapsed(s) => match s {
-				Empty => " ".to_string(),
-				BT => "|".to_string(),
-				LR => "-".to_string(),
-				LTR => "^".to_string(),
-				BLTR => "+".to_string(),
-			},
+			Collapsed(s) => s.to_string(),
 			Superposition(v) => v.len().to_string(),
 			Invalid => "!".to_string(),
 		}
